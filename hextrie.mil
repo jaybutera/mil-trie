@@ -1,0 +1,42 @@
+; Executed when spender is an internal trie node
+(fn node-proc ()
+    (let (i 0)
+        (loop 16
+            (let (out-path  (get (get outputs i) 3)
+                  out-value (get (get outputs i) 1)
+                  out-denom (get (get outputs i) 2)
+                  out-script (get (get outputs i) 0))
+                (and
+                    (and
+                        (and
+                            ; Correct path in UTXO data field
+                            (= out-path (&& SELF-DATA (<< i (* level 4))))
+                            ; Value divides evenly into UTXOs
+                            (= out-value divided-value))
+                        ; Script is replicated
+                        (= out-script COV-HASH))
+                    ; Denomination type is replicated
+                    (= out-denom COIN-DENOM))
+                (set! i (+ i 1))))))
+
+; Executed when spender is spending a leaf node
+(fn leaf-proc ()
+    (let (name      (get (get outputs i) 3)
+          out-value (get (get outputs i) 1)
+          out-denom (get (get outputs i) 2)
+          out-script (get (get outputs i) 0))
+        (and
+            (and
+                ; Script is replicated
+                (= out-script COV-HASH)
+                ; Name's hash matches node's path
+                (= (SELF-DATA (hash 32 name))))
+            ; Output is an NFT (value of 1, unique demonination)
+            (
+
+(let (outputs (get SPENDER-TX 2)
+      divided-value (- (/ SELF-VALUE 16) 1))
+    ; A value of 1 means node is a leaf
+    (if (= 1 COIN-VALUE)
+        (leaf-proc)
+        (node-proc)))
