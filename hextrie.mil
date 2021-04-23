@@ -1,6 +1,11 @@
 ; Executed when spender is an internal trie node
 (fn node-proc ()
-    (let (i 0)
+    (let (i 0
+          total-trie-value (** 16 7)
+          ; root node starts with total=16**7 tokens of its own denom.
+          ; tokens are distributed evenly to 16 outputs. A leaf coin spends 1 token.
+          ; level = log16(total / coin_value)
+          level (log16 (/ total-trie-value COIN-VALUE)))
         (loop 16
             (let (out-path  (get (get outputs i) 3)
                   out-value (get (get outputs i) 1)
@@ -10,7 +15,7 @@
                     (and
                         (and
                             ; Correct path in UTXO data field
-                            (= out-path (&& SELF-DATA (<< i (* level 4))))
+                            (= out-path (& SELF-DATA (<< i (* level 4))))
                             ; Value divides evenly into UTXOs
                             (= out-value divided-value))
                         ; Script is replicated
@@ -21,21 +26,21 @@
 
 ; Executed when spender is spending a leaf node
 (fn leaf-proc ()
-    (let (name      (get (get outputs i) 3)
-          out-value (get (get outputs i) 1)
-          out-denom (get (get outputs i) 2)
-          out-script (get (get outputs i) 0))
+    (let (name      (get (get outputs 0) 3)
+          out-value (get (get outputs 0) 1)
+          out-denom (get (get outputs 0) 2)
+          out-script (get (get outputs 0) 0))
         (and
             (and
                 ; Script is replicated
                 (= out-script COV-HASH)
                 ; Name's hash matches node's path
-                (= (SELF-DATA (hash 32 name))))
+                (= SELF-DATA (hash 32 name)))
             ; Output is an NFT (value of 1, unique demonination)
-            (
+            (= out-denom ""))))
 
 (let (outputs (get SPENDER-TX 2)
-      divided-value (- (/ SELF-VALUE 16) 1))
+      divided-value (/ COIN-VALUE 16))
     ; A value of 1 means node is a leaf
     (if (= 1 COIN-VALUE)
         (leaf-proc)
